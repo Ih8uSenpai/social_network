@@ -133,7 +133,7 @@ public class ProfileService {
     }
 
     public List<Profile> searchProfilesByTag(String tag) {
-        return profileRepository.findByTagContaining(tag);
+        return profileRepository.findByTagContainingIgnoreCase(tag);
     }
 
     public boolean followUser(String currentUsername, Long userIdToFollow) {

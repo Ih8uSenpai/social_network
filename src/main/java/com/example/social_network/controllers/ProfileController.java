@@ -202,6 +202,25 @@ public class ProfileController {
         return new ResponseEntity<>(commentRepository.save(comment), HttpStatus.OK);
     }
 
+    @PostMapping("/post/{postId}/{commentId}/commentReply")
+    public ResponseEntity<?> addReplyToTheComment(@PathVariable Long commentId, @PathVariable Long postId, @RequestPart String content, @Nullable @RequestPart MultipartFile file) {
+        User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).orElse(null);
+        Comment parentComment = commentRepository.findById(commentId).orElseThrow();
+        if (user == null)
+            return ResponseEntity.ok("User doesn't exist");
+        Comment comment = new Comment();
+        comment.setParentComment(parentComment);
+        comment.setContent(content);
+        comment.setPostId(postId);
+        comment.setUserId(user.getUserId());
+
+        Post post = postRepository.findById(postId).get();
+        post.setCommentsCount(post.getCommentsCount() + 1);
+        postRepository.save(post);
+
+        return new ResponseEntity<>(commentRepository.save(comment), HttpStatus.OK);
+    }
+
     @GetMapping("/post/{postId}")
     public ResponseEntity<List<PostAttachment>> getAttachmentsByPostId(@PathVariable Long postId) {
         List<PostAttachment> attachments = attachmentService.getAttachmentsByPostId(postId);

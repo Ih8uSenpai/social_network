@@ -11,6 +11,6 @@ import java.util.Optional;
 public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
     Optional<Profile> findByUser_UserId(Long userId);
-    List<Profile> findByTagContaining(String tag);
+    List<Profile> findByTagContainingIgnoreCase(String tag);
 
 }

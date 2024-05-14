@@ -2,11 +2,13 @@ package com.example.social_network.services;
 
 import com.example.social_network.dto.CreateChatDto;
 import com.example.social_network.dto.CreateMessageDto;
+import com.example.social_network.dto.MessageDto;
 import com.example.social_network.entity.*;
-import com.example.social_network.repositories.ChatRepository;
-import com.example.social_network.repositories.ChatUserRepository;
-import com.example.social_network.repositories.MessageRepository;
-import com.example.social_network.repositories.ProfileRepository;
+import com.example.social_network.repositories.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import org.apache.catalina.mapper.Mapper;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -18,18 +20,18 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class ChatService {
 
-    @Autowired
-    private ChatRepository chatRepository;
+    private final ChatRepository chatRepository;
 
-    @Autowired
-    private ChatUserRepository chatUserRepository;
-    @Autowired
-    private ProfileRepository profileRepository;
 
-    @Autowired
-    private MessageRepository messageRepository;
+    private final ChatUserRepository chatUserRepository;
+    private final ProfileRepository profileRepository;
+
+    private final MessageRepository messageRepository;
+    private final ViewedMessageRepository viewedMessageRepository;
+    private final ModelMapper mapper = new ModelMapper();
 
     public Message createMessage(CreateMessageDto createMessageDto, Long senderId, Long chatId) {
         Message message = new Message();
@@ -52,7 +54,7 @@ public class ChatService {
         chatRepository.save(chat);
 
 
-        for (Long el: createChatDto.getUserIds()){
+        for (Long el : createChatDto.getUserIds()) {
             ChatUser newChatUser = new ChatUser();
             newChatUser.setChatId(chat.getId());
 
@@ -77,18 +79,26 @@ public class ChatService {
         // Возвращаем список чатов, отфильтрованный по идентификаторам
         List<Chat> chats = chatRepository.findAllById(chatIds);
         List<CreateChatDto> dtoList = new ArrayList<>();
-        for (Chat el : chats){
+        for (Chat el : chats) {
             CreateChatDto chatDto = new CreateChatDto();
             chatDto.setChatType(el.getChatType());
             chatDto.setName(el.getName());
             List<ChatUser> chatUserList = chatUserRepository.findByChatId(el.getId());
             List<Long> chatUserIds = new ArrayList<>();
-            for (ChatUser el1: chatUserList){
+            for (ChatUser el1 : chatUserList) {
                 chatUserIds.add(el1.getUserId());
             }
             chatDto.setUserIds(chatUserIds);
             chatDto.setProfileData(getChatPartnerByChatId(el.getId(), userId));
             chatDto.setId(el.getId());
+
+            messageRepository.findFirstByChatIdOrderBySentAtDesc(el.getId()).ifPresent(value -> {
+                chatDto.setLastMessage(value.getContent());
+                chatDto.setLastMessageSenderIconUrl(profileRepository.findByUser_UserId(value.getSender().getUserId()).get().getProfilePictureUrl());
+            });
+
+            chatDto.setUnviewedMessages(messageRepository.findUnviewedMessagesByChatIdAndUserId(el.getId(), userId).size());
+
             dtoList.add(chatDto);
         }
         return dtoList;
@@ -100,7 +110,7 @@ public class ChatService {
         if (chatUsers.size() != 2)
             return null;
         Long chatPartnerId = 0L;
-        for (ChatUser el: chatUsers)
+        for (ChatUser el : chatUsers)
             if (!Objects.equals(el.getUserId(), currentUserId))
                 chatPartnerId = el.getUserId();
         // Возвращаем список чатов, отфильтрованный по идентификаторам
@@ -108,7 +118,15 @@ public class ChatService {
         return profile.orElse(null);
     }
 
-    public List<Message> getMessagesForChat(Long chatId) {
-        return messageRepository.findByChatId(chatId);
+    public List<MessageDto> getMessagesForChat(Long chatId) {
+        List<Message> messages = messageRepository.findByChatId(chatId);
+        List<MessageDto> messageDtos = new ArrayList<>();
+        messages.forEach(message ->
+        {
+            MessageDto messageDto = mapper.map(message, MessageDto.class);
+            messageDto.setViewed(viewedMessageRepository.existsByMessageId(message.getMessageId()));
+            messageDtos.add(messageDto);
+        });
+        return messageDtos;
     }
 }

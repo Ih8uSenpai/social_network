@@ -13,4 +13,7 @@ public class CreateChatDto {
     private List<Long> userIds;
     private ChatType chatType;
     private Profile profileData;
+    private String lastMessage;
+    private String lastMessageSenderIconUrl;
+    private int unviewedMessages;
 }

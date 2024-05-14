@@ -2,13 +2,15 @@ package com.example.social_network.controllers;
 
 import com.example.social_network.dto.CreateChatDto;
 import com.example.social_network.dto.CreateMessageDto;
-import com.example.social_network.entity.Chat;
-import com.example.social_network.entity.Message;
-import com.example.social_network.entity.Profile;
-import com.example.social_network.entity.User;
+import com.example.social_network.dto.MessageDto;
+import com.example.social_network.entity.*;
 import com.example.social_network.repositories.ChatRepository;
+import com.example.social_network.repositories.MessageRepository;
 import com.example.social_network.repositories.UserRepository;
+import com.example.social_network.repositories.ViewedMessageRepository;
 import com.example.social_network.services.ChatService;
+import com.example.social_network.utils.SecurityUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,17 +24,18 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/chats")
+@RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
 public class ChatController {
 
-    @Autowired
-    private ChatService chatService;
+    private final ChatService chatService;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private ChatRepository chatRepository;
+    private final ChatRepository chatRepository;
+
+    private final MessageRepository messageRepository;
+    private final ViewedMessageRepository viewedMessageRepository;
 
     @PostMapping("/create")
     public ResponseEntity<Chat> createChat(@RequestBody CreateChatDto createChatDto, Principal principal) {
@@ -74,10 +77,9 @@ public class ChatController {
         return new ResponseEntity<>(message, HttpStatus.CREATED);
     }
 
-
     @GetMapping("/{chatId}/messages")
-    public ResponseEntity<List<Message>> getMessages(@PathVariable Long chatId) {
-        List<Message> messages = chatService.getMessagesForChat(chatId);
+    public ResponseEntity<List<MessageDto>> getMessages(@PathVariable Long chatId) {
+        List<MessageDto> messages = chatService.getMessagesForChat(chatId);
         return ResponseEntity.ok(messages);
     }
 
@@ -94,5 +96,22 @@ public class ChatController {
         if (isExisting)
             map.put("chatId", chat.get().getId());
         return ResponseEntity.ok(map);
+    }
+
+    @GetMapping("/unviewed/{userId}/{chatId}")
+    public ResponseEntity<?> getUnviewedMessages(@PathVariable Long userId, @PathVariable Long chatId) {
+        List<Message> messages = messageRepository.findUnviewedMessagesByChatIdAndUserId(chatId, userId);
+        return ResponseEntity.ok(messages.size());
+    }
+
+
+    @PostMapping("/mark-viewed")
+    public ResponseEntity<?> markPostAsViewed(@RequestBody Long messageId) {
+        User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).get();
+        if (!viewedMessageRepository.existsByUserIdAndMessageId(user.getUserId(), messageId)) {
+            ViewedMessage viewedMessage = new ViewedMessage(user.getUserId(), messageId);
+            viewedMessageRepository.save(viewedMessage);
+        }
+        return new ResponseEntity<>("Message with id = " + messageId + " viewed", HttpStatus.OK);
     }
 }
