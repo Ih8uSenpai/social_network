@@ -1,5 +1,6 @@
 package com.example.social_network.utils;
 
+import com.example.social_network.entity.User;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -13,4 +14,5 @@ public class SecurityUtils {
             return principal.toString();
         }
     }
+
 }

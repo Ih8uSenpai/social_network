@@ -4,6 +4,7 @@ import com.example.social_network.entity.Like;
 import com.example.social_network.entity.User;
 import com.example.social_network.repositories.UserRepository;
 import com.example.social_network.services.LikeService;
+import com.example.social_network.services.UserInterestsService;
 import com.example.social_network.utils.SecurityUtils;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;

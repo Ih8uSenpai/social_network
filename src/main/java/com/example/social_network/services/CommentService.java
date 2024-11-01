@@ -41,6 +41,7 @@ public class CommentService {
         {
             CommentDto commentDto1 = convertCommentToDto(reply);
             commentDto1.setParentTag(profileRepository.findByUser_UserId(commentDto.getUserId()).get().getTag());
+            commentDto1.setParentId(comment.getId());
             commentDtoReplies.add(commentDto1);
         });
         commentDto.setReplies(commentDtoReplies);

@@ -40,8 +40,11 @@ public class Profile {
 
     @Column(name = "followers_count")
     private Long followersCount;
+
     @Column(name = "following_count")
     private Long followingCount;
+
+    private Long pinnedPostId;
 
 
 }

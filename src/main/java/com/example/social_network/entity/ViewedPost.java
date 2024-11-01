@@ -22,8 +22,18 @@ public class ViewedPost {
     @Column(name = "post_id")
     private Long postId;
 
+    @Column(name = "view_type", nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ViewType viewType;
+
     public ViewedPost(Long userId, Long postId) {
         this.userId = userId;
         this.postId = postId;
+    }
+
+    public enum ViewType {
+        QUICK,
+        MEDIUM,
+        LONG
     }
 }

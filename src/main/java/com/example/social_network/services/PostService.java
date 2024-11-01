@@ -85,4 +85,8 @@ public class PostService {
         return postRepository.findPostsLikedByUser(userId);
     }
 
+    public List<Post> findPostsByTagSubstring(String substring) {
+        return postRepository.findByTagContaining(substring);
+    }
+
 }

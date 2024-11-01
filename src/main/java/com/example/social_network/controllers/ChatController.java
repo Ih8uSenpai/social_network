@@ -3,14 +3,18 @@ package com.example.social_network.controllers;
 import com.example.social_network.dto.CreateChatDto;
 import com.example.social_network.dto.CreateMessageDto;
 import com.example.social_network.dto.MessageDto;
+import com.example.social_network.dto.PostDto;
 import com.example.social_network.entity.*;
 import com.example.social_network.repositories.ChatRepository;
 import com.example.social_network.repositories.MessageRepository;
 import com.example.social_network.repositories.UserRepository;
 import com.example.social_network.repositories.ViewedMessageRepository;
 import com.example.social_network.services.ChatService;
+import com.example.social_network.services.UserToUserInterestService;
 import com.example.social_network.utils.SecurityUtils;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +30,7 @@ import java.util.Optional;
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:3000")
+@Slf4j
 public class ChatController {
 
     private final ChatService chatService;
@@ -36,6 +41,8 @@ public class ChatController {
 
     private final MessageRepository messageRepository;
     private final ViewedMessageRepository viewedMessageRepository;
+
+    private final UserToUserInterestService userToUserInterestService;
 
     @PostMapping("/create")
     public ResponseEntity<Chat> createChat(@RequestBody CreateChatDto createChatDto, Principal principal) {
@@ -64,16 +71,17 @@ public class ChatController {
         return ResponseEntity.ok(profile);
     }
 
+    @Transactional
     @PostMapping("/{chatId}/messages")
     public ResponseEntity<Message> createMessage(@PathVariable Long chatId,
                                                  @RequestBody CreateMessageDto createMessageDto,
                                                  Principal principal) {
-        System.out.println(chatId);
         String currentUsername = principal.getName();
-        Optional<User> sender = userRepository.findByUsername(currentUsername);
-        Long senderId = sender.get().getUserId();
+        User sender = userRepository.findByUsername(currentUsername).get();
+        User receiver = chatService.getChatPartnerByChatId(chatId, sender.getUserId()).getUser();
 
-        Message message = chatService.createMessage(createMessageDto, senderId, chatId);
+        userToUserInterestService.saveOrUpdateInterest(sender.getUserId(), receiver.getUserId(), 0.1);
+        Message message = chatService.createMessage(createMessageDto, sender.getUserId(), chatId);
         return new ResponseEntity<>(message, HttpStatus.CREATED);
     }
 
@@ -114,4 +122,25 @@ public class ChatController {
         }
         return new ResponseEntity<>("Message with id = " + messageId + " viewed", HttpStatus.OK);
     }
+
+    @PostMapping("messages/delete")
+    @Transactional
+    public ResponseEntity<?> deleteMessages(@RequestBody List<Long> messageIds){
+        chatService.deleteMessages(messageIds);
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @PutMapping("messages")
+    @Transactional
+    public ResponseEntity<?> editMessage(@RequestBody Message new_message){
+        chatService.editMessage(new_message);
+        return ResponseEntity.ok(HttpStatus.OK);
+    }
+
+    @GetMapping("/search")
+    public List<CreateChatDto> searchChats(@RequestParam String query) {
+        User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).get();
+        return chatService.getChatsForUserByMessageContent(user.getUserId(), query);
+    }
+
 }

@@ -19,4 +19,5 @@ public class CommentDto {
     private String url;
     private List<CommentDto> replies = new ArrayList<>();
     private String parentTag;
+    private Long parentId;
 }

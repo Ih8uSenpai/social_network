@@ -56,5 +56,9 @@ public class TrackService {
     public List<Track> getAllTracks() {
         return trackRepository.findAll();
     }
+
+    public List<Track> searchTracks(String searchString) {
+        return trackRepository.findByTitleContainingIgnoreCaseOrArtistContainingIgnoreCase(searchString, searchString);
+    }
 }
 

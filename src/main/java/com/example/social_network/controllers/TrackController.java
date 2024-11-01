@@ -1,7 +1,10 @@
 package com.example.social_network.controllers;
 
+import com.example.social_network.dto.CreateChatDto;
 import com.example.social_network.entity.Track;
+import com.example.social_network.entity.User;
 import com.example.social_network.services.TrackService;
+import com.example.social_network.utils.SecurityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,5 +47,11 @@ public class TrackController {
         List<Track> tracks = trackService.getAllTracks();
         return new ResponseEntity<>(tracks, HttpStatus.OK);
     }
+
+    @GetMapping("/search")
+    public List<Track> searchTracks(@RequestParam String query) {
+        return trackService.searchTracks(query);
+    }
+
 }
 

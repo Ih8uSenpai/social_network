@@ -2,8 +2,13 @@ package com.example.social_network.services;
 
 import com.example.social_network.entity.Like;
 import com.example.social_network.entity.Post;
+import com.example.social_network.entity.User;
 import com.example.social_network.repositories.LikeRepository;
 import com.example.social_network.repositories.PostRepository;
+import com.example.social_network.repositories.UserRepository;
+import com.example.social_network.utils.SecurityUtils;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,21 +18,26 @@ import java.time.format.DateTimeFormatter;
 
 
 @Service
+@RequiredArgsConstructor
 public class LikeService {
 
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
+    private final UserInterestsService userInterestsService;
+    private final UserToUserInterestService userToUserInterestService;
 
-    @Autowired
-    public LikeService(LikeRepository likeRepository, PostRepository postRepository) {
-        this.likeRepository = likeRepository;
-        this.postRepository = postRepository;
-    }
 
+
+
+    @Transactional
     public Like addLikeToPost(Long postId, Long userId) {
         // Проверяем, существует ли пост
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
+
+        // добавляем интерес текущего пользователя к владельцу поста
+        User post_creator = post.getProfile().getUser();
+        userToUserInterestService.saveOrUpdateInterest(userId, post_creator.getUserId(), 5);
 
         // Создаем новый лайк
         Like like = new Like();
@@ -42,15 +52,24 @@ public class LikeService {
         post.setLikesCount(post.getLikesCount() + 1);
         postRepository.save(post);
 
+        userInterestsService.addLike(userId, post);
+
         return like;
     }
 
+    @Transactional
     public void removeLike(Long userId, Long postId, Long commentId) {
         likeRepository.deleteByUserIdAndPostIdAndCommentId(userId, postId, commentId);
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
         post.setLikesCount(post.getLikesCount() - 1);
         postRepository.save(post);
+
+        userInterestsService.removeLike(userId, post);
+
+        // убираем интерес текущего пользователя к владельцу поста
+        User post_creator = post.getProfile().getUser();
+        userToUserInterestService.saveOrUpdateInterest(userId, post_creator.getUserId(), -5);
     }
 
     public int getLikesByPostAndDateRange(Long postId, String fromDate, String toDate) {

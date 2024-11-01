@@ -1,5 +1,6 @@
 package com.example.social_network.repositories;
 
+import com.example.social_network.entity.Chat;
 import com.example.social_network.entity.Message;
 import com.example.social_network.entity.Post;
 import org.springframework.data.domain.Pageable;
@@ -21,5 +22,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     @Query("SELECT m FROM Message m WHERE m.chat.id = :chatId AND not m.sender.userId = :userId AND m.messageId not in (select vm.messageId from ViewedMessage vm where vm.messageId = m.messageId and vm.userId = :userId)")
     List<Message> findUnviewedMessagesByChatIdAndUserId(@Param("chatId") Long chatId, @Param("userId") Long userId);
+
+    @Query("SELECT DISTINCT m.chat FROM Message m WHERE LOWER(m.content) LIKE LOWER(CONCAT('%', :substring, '%'))")
+    List<Chat> findChatsByMessageContentContaining(@Param("substring") String substring);
 }
 

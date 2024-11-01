@@ -6,6 +6,7 @@ import com.example.social_network.entity.Profile;
 import com.example.social_network.entity.User;
 import com.example.social_network.repositories.*;
 import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -219,6 +217,26 @@ public class ProfileService {
                 .map(following -> profileRepository.findByUser_UserId(following.getUser().getUserId()).orElse(null))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+    }
+
+    public void changePinnedPost(Long userId, Long newPostId){
+        Profile profile = profileRepository.findByUser_UserId(userId).orElse(null);
+        if (profile != null){
+            profile.setPinnedPostId(newPostId);
+            profileRepository.save(profile);
+        }
+    }
+
+    public void unpinPost(Long userId){
+        Profile profile = profileRepository.findByUser_UserId(userId).orElse(null);
+        if (profile != null){
+            profile.setPinnedPostId(null);
+            profileRepository.save(profile);
+        }
+    }
+
+    public Optional<Profile> findProfileByTag(String tag){
+        return profileRepository.findByTag(tag);
     }
 
 

@@ -20,5 +20,4 @@ public class ChatUser {
     @Column(name = "user_id")
     private Long userId;
 
-
 }

@@ -13,4 +13,6 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
     Optional<Profile> findByUser_UserId(Long userId);
     List<Profile> findByTagContainingIgnoreCase(String tag);
 
+    Optional<Profile> findByTag(String tag);
+
 }

@@ -2,17 +2,14 @@ package com.example.social_network.controllers;
 
 import com.example.social_network.dto.PostDto;
 import com.example.social_network.entity.*;
-import com.example.social_network.repositories.CommentRepository;
-import com.example.social_network.repositories.PostRepository;
-import com.example.social_network.repositories.User2PhotosRepository;
-import com.example.social_network.repositories.UserRepository;
-import com.example.social_network.services.PostAttachmentService;
-import com.example.social_network.services.ProfileService;
-import com.example.social_network.services.PageVisitService;
+import com.example.social_network.repositories.*;
+import com.example.social_network.services.*;
 import com.example.social_network.utils.SecurityUtils;
+import com.example.social_network.utils.TagExtractor;
 import jakarta.annotation.Nullable;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,19 +22,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static com.example.social_network.controllers.PostController.convertPostsToDTO;
 import static com.example.social_network.utils.Constants.uploadPath;
-import static com.example.social_network.utils.CustomDateFormatter.formatter2;
+import static com.example.social_network.utils.Mappers.convertTrackToPostTrack;
 
 @RestController
 @RequestMapping("/api/profiles")
 @CrossOrigin(origins = "http://localhost:3000")
 @RequiredArgsConstructor
+@Slf4j
 public class ProfileController {
 
     private final ProfileService profileService;
@@ -47,6 +44,11 @@ public class ProfileController {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
     private final User2PhotosRepository user2PhotosRepository;
+
+    private final TagExtractor tagExtractor;
+    private final UserInterestsService userInterestsService;
+
+    private final UserToUserInterestService userToUserInterestService;
 
     @GetMapping("/other/{userId}")
     public ResponseEntity<Profile> getUserProfile(@PathVariable Long userId) {
@@ -85,6 +87,7 @@ public class ProfileController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Ошибка при загрузке изображения: " + e.getMessage());
         }
     }
+
     @PostMapping("/upload-icon/{userId}")
     public ResponseEntity<?> uploadProfileIcon(@PathVariable Long userId, @RequestParam("image") MultipartFile file) {
         try {
@@ -105,18 +108,30 @@ public class ProfileController {
         }
 
         List<Post> posts = profileService.getPostsByProfileId(profileId);
-        List<Post> sortedPosts = posts.stream()
-                .sorted((post1, post2) -> post2.getCreatedAt().compareTo(post1.getCreatedAt())).toList();
+        Long pinnedPostId = profile.get().getPinnedPostId();
 
-        List<PostDto> postDtos = new ArrayList<>();
-        sortedPosts.forEach(post ->
-        {
-            PostDto postDto = new PostDto(post.getId(), post.getProfile(), post.getContent(), post.getCreatedAt().format(formatter2), post.getLikesCount(), post.getSharesCount(), post.getCommentsCount(), post.getLikes(), post.getPostAttachments().stream()
-                    .map(PostAttachment::getUrl)
-                    .collect(Collectors.toList()), post.isLikedByUser(user.getUserId()));
-            postDtos.add(postDto);
-        });
-        return ResponseEntity.ok(postDtos);
+        List<Post> sortedPosts = posts.stream()
+                .sorted((post1, post2) -> post2.getCreatedAt().compareTo(post1.getCreatedAt()))
+                .collect(Collectors.toList());
+
+        if (pinnedPostId != null) {
+            Optional<Post> pinnedPost = sortedPosts.stream()
+                    .filter(post -> post.getId().equals(pinnedPostId))
+                    .findFirst();
+
+            if (pinnedPost.isPresent()) {
+                sortedPosts.remove(pinnedPost.get()); // Удаляем его из списка
+                sortedPosts.add(0, pinnedPost.get()); // Добавляем его в начало списка
+            }
+        }
+
+        if (pinnedPostId == null) {
+            return ResponseEntity.ok(convertPostsToDTO(user, sortedPosts));
+        } else {
+            List<PostDto> postDtos = convertPostsToDTO(user, sortedPosts);
+            postDtos.get(0).setPinned(true);
+            return ResponseEntity.ok(postDtos);
+        }
     }
 
     @GetMapping("/{profileId}/photos")
@@ -129,8 +144,27 @@ public class ProfileController {
         return ResponseEntity.ok(photos);
     }
 
+    @DeleteMapping("/{postId}")
+    @Transactional
+    public ResponseEntity<?> deletePost(@PathVariable Long postId, @RequestBody Long author_id, Principal principal) {
+        String currentUsername = principal.getName();
+        Optional<User> currentUser = userRepository.findByUsername(currentUsername);
+        AtomicReference<String> result = new AtomicReference<>();
+        currentUser.ifPresent(user -> {
+            if (Objects.equals(user.getUserId(), author_id)) {
+                postRepository.deleteById(postId);
+                result.set("post with id = " + postId + " was deleted");
+            } else
+                result.set("access denied");
+        });
+
+        return ResponseEntity.ok(result);
+    }
+
     @PostMapping("/{profileId}/posts")
-    public ResponseEntity<Post> createPost(@PathVariable Long profileId, @RequestPart String content, @Nullable @RequestPart("files") List<MultipartFile> files) {
+    public ResponseEntity<Post> createPost(@PathVariable Long profileId, @RequestPart @Nullable String content,
+                                           @Nullable @RequestPart("files") List<MultipartFile> files,
+                                           @RequestPart @Nullable List<Track> selectedTracks) throws Exception {
         Optional<Profile> profile = profileService.getProfileById(profileId);
 
         if (profile.isEmpty()) {
@@ -138,7 +172,10 @@ public class ProfileController {
         }
 
         Post post = new Post();
-        post.setContent(content);
+        if (content != null) {
+            post.setContent(content);
+            post.getTags().addAll(tagExtractor.extractTags(content));
+        }
         post.setProfile(profile.get());
 
         User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).get();
@@ -171,6 +208,16 @@ public class ProfileController {
             post.setPostAttachments(postAttachments);
         }
 
+
+        // прикрепляем трэки (если есть)
+        if (selectedTracks != null)
+        {
+            List<PostTrack> postTracks = new ArrayList<>();
+            for (Track track : selectedTracks){
+                postTracks.add(convertTrackToPostTrack(track, post));
+            }
+            post.setPostTracks(postTracks);
+        }
         Post savedPost = profileService.savePost(post);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPost);
     }
@@ -181,11 +228,12 @@ public class ProfileController {
         PostAttachment attachment = new PostAttachment();
 
         attachment.setPost(postRepository.findById(postId).orElse(null));
-        PostAttachment savedAttachment = attachment.getPost() != null ? attachmentService.saveAttachment(attachment, file): null;
+        PostAttachment savedAttachment = attachment.getPost() != null ? attachmentService.saveAttachment(attachment, file) : null;
         return new ResponseEntity<>(savedAttachment, HttpStatus.CREATED);
     }
 
     @PostMapping("/post/{postId}/comment")
+    @Transactional
     public ResponseEntity<?> addCommentToThePost(@PathVariable Long postId, @RequestPart String content, @Nullable @RequestPart MultipartFile file) {
         User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).orElse(null);
         if (user == null)
@@ -199,6 +247,8 @@ public class ProfileController {
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
 
+        userInterestsService.addComment(user.getUserId(), post);
+        userToUserInterestService.addComment(user.getUserId(), post.getProfile().getUser().getUserId(), post);
         return new ResponseEntity<>(commentRepository.save(comment), HttpStatus.OK);
     }
 
@@ -239,8 +289,12 @@ public class ProfileController {
     }
 
     @PostMapping("/follow/{userId}")
+    @Transactional
     public ResponseEntity<?> followUser(@PathVariable Long userId, Principal principal) {
         String currentUsername = principal.getName();
+        User current_user = userRepository.findByUsername(currentUsername).get();
+
+        userToUserInterestService.saveOrUpdateInterest(current_user.getUserId(), userId, 50);
         boolean result = profileService.followUser(currentUsername, userId);
         if (result) {
             return ResponseEntity.ok().build();
@@ -288,4 +342,32 @@ public class ProfileController {
         return new ResponseEntity<>("SUCCESS", HttpStatus.OK);
     }
 
+    @PostMapping("/pinPost/{postId}")
+    public ResponseEntity<?> pinPost(@PathVariable Long postId, Principal principal) {
+        String currentUsername = principal.getName();
+        userRepository.findByUsername(currentUsername).ifPresent(user ->
+        {
+            profileService.changePinnedPost(user.getUserId(), postId);
+        });
+        return new ResponseEntity<>("SUCCESS", HttpStatus.OK);
+    }
+
+    @PostMapping("/unpinPost")
+    public ResponseEntity<?> unpinPost(Principal principal) {
+        String currentUsername = principal.getName();
+        userRepository.findByUsername(currentUsername).ifPresent(user ->
+        {
+            profileService.unpinPost(user.getUserId());
+        });
+        return new ResponseEntity<>("SUCCESS", HttpStatus.OK);
+    }
+
+    @GetMapping("/findByTag")
+    public ResponseEntity<?> findProfileByTag(@RequestParam String tag) {
+        Optional<Profile> profile = profileService.findProfileByTag(tag);
+        if (profile.isPresent())
+            return new ResponseEntity<>(profile.get(), HttpStatus.OK);
+        else
+            return new ResponseEntity<>("there's no user with tag = " + tag, HttpStatus.NOT_FOUND);
+    }
 }

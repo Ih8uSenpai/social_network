@@ -20,4 +20,5 @@ public class MessageDto {
     private String content;
     private LocalDateTime sentAt;
     private boolean isViewed = false;
+    private boolean isSingle = true;
 }
