@@ -144,6 +144,17 @@ public class ProfileController {
         return ResponseEntity.ok(photos);
     }
 
+    @DeleteMapping("/photo/{index}")
+    public ResponseEntity<?> deletePhoto(@PathVariable int index){
+        String username = SecurityUtils.getCurrentUsername();
+        User currentUser = userRepository.findByUsername(username).get();
+        List<User2Photos> user2Photos = user2PhotosRepository.findAllByUser(currentUser);
+
+        Long id = user2Photos.get(index).getId();
+        user2PhotosRepository.deleteById(id);
+        return ResponseEntity.ok("photo was deleted");
+    }
+
     @DeleteMapping("/{postId}")
     @Transactional
     public ResponseEntity<?> deletePost(@PathVariable Long postId, @RequestBody Long author_id, Principal principal) {
