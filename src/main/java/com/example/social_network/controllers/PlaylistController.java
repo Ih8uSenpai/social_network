@@ -1,5 +1,6 @@
 package com.example.social_network.controllers;
 
+import com.example.social_network.dto.TrackDto;
 import com.example.social_network.entity.Playlist;
 import com.example.social_network.entity.PlaylistTracks;
 import com.example.social_network.entity.Track;
@@ -89,22 +90,22 @@ public class PlaylistController {
     }
 
     @GetMapping("/my")
-    public ResponseEntity<List<Track>> getMyPlaylist() {
+    public ResponseEntity<List<TrackDto>> getMyPlaylist() {
         User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).orElse(null);
         Long playlistId = playlistRepository.findByNameAndDescription(user.getUserId().toString(), "@me").get().getId();
         List<PlaylistTracks> playlistTracks = playlistTracksRepository.findAllByPlaylistId(playlistId);
-        List<Track> tracks = new ArrayList<>();
-        playlistTracks.forEach(playlistTrack -> tracks.add(playlistTrack.getTrack()));
+        List<TrackDto> tracks = new ArrayList<>();
+        playlistTracks.forEach(playlistTrack -> tracks.add(playlistTrack.getTrack().toTrackDto()));
         return new ResponseEntity<>(tracks, HttpStatus.OK);
     }
 
     @GetMapping("/{userId}")
-    public ResponseEntity<List<Track>> getUserPlaylist(@PathVariable Long userId) {
+    public ResponseEntity<List<TrackDto>> getUserPlaylist(@PathVariable Long userId) {
         User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).orElse(null);
         Long playlistId = playlistRepository.findByNameAndDescription(String.valueOf(userId), "@me").get().getId();
         List<PlaylistTracks> playlistTracks = playlistTracksRepository.findAllByPlaylistId(playlistId);
-        List<Track> tracks = new ArrayList<>();
-        playlistTracks.forEach(playlistTrack -> tracks.add(playlistTrack.getTrack()));
+        List<TrackDto> tracks = new ArrayList<>();
+        playlistTracks.forEach(playlistTrack -> tracks.add(playlistTrack.getTrack().toTrackDto()));
         return new ResponseEntity<>(tracks, HttpStatus.OK);
     }
 }

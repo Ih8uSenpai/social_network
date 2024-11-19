@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 
 import static com.example.social_network.controllers.PostController.convertPostsToDTO;
 import static com.example.social_network.utils.Constants.uploadPath;
-import static com.example.social_network.utils.Mappers.convertTrackToPostTrack;
 
 @RestController
 @RequestMapping("/api/profiles")
@@ -225,7 +224,7 @@ public class ProfileController {
         {
             List<PostTrack> postTracks = new ArrayList<>();
             for (Track track : selectedTracks){
-                postTracks.add(convertTrackToPostTrack(track, post));
+                postTracks.add(new PostTrack(null, track, post));
             }
             post.setPostTracks(postTracks);
         }
@@ -380,5 +379,26 @@ public class ProfileController {
             return new ResponseEntity<>(profile.get(), HttpStatus.OK);
         else
             return new ResponseEntity<>("there's no user with tag = " + tag, HttpStatus.NOT_FOUND);
+    }
+
+    @PutMapping("/{profileId}/change-tag")
+    public ResponseEntity<String> changeTag(@PathVariable Long profileId,
+                                            @RequestParam String tag) {
+        profileService.changeTag(profileId, tag);
+        return ResponseEntity.ok("Tag updated successfully");
+    }
+
+    @PutMapping("/{profileId}/update-firstname")
+    public ResponseEntity<String> changeFirstName(@PathVariable Long profileId,
+                                            @RequestParam String firstName) {
+        profileService.changeFirstName(profileId, firstName);
+        return ResponseEntity.ok("First name updated successfully");
+    }
+
+    @PutMapping("/{profileId}/update-lastname")
+    public ResponseEntity<String> changeLastName(@PathVariable Long profileId,
+                                            @RequestParam String lastName) {
+        profileService.changeLastName(profileId, lastName);
+        return ResponseEntity.ok("Last name updated successfully");
     }
 }

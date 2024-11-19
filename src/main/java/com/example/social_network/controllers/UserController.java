@@ -66,7 +66,6 @@ public class UserController {
     @PostMapping("/logout")
     public ResponseEntity<?> logoutUser(Principal principal) {
         String username = principal.getName();
-        System.out.println("sdfdsssssssssssssss\n\n\n\n\n\n\n\n\n\n\n\n username =" + username);
         User user = userRepository.findByUsername(username).orElse(null);
         if (user != null) {
             user.setIsOnline(false);
@@ -95,4 +94,48 @@ public class UserController {
     }
 
 
+    @PutMapping("/{userId}/change-password")
+    public ResponseEntity<String> changePassword(@PathVariable Long userId,
+                                                 @RequestParam String oldPassword,
+                                                 @RequestParam String newPassword) {
+        userService.changePassword(userId, oldPassword, newPassword);
+        return ResponseEntity.ok("Password updated successfully");
+    }
+
+    @PutMapping("/{userId}/change-username")
+    public ResponseEntity<String> changeUsername(@PathVariable Long userId,
+                                                 @RequestParam String newUsername) {
+        userService.changeUsername(userId, newUsername);
+        return ResponseEntity.ok("Username updated successfully");
+    }
+
+    @PutMapping("/{userId}/change-email")
+    public ResponseEntity<String> changeEmail(@PathVariable Long userId,
+                                              @RequestParam String newEmail) {
+        userService.changeEmail(userId, newEmail);
+        return ResponseEntity.ok("Email updated successfully");
+    }
+
+    @PutMapping("/{userId}/deactivate")
+    public ResponseEntity<String> deactivateUser(
+            @PathVariable Long userId,
+            @RequestHeader("Authorization") String authorizationHeader // Получаем токен из заголовка
+    ) {
+        // Извлекаем токен из заголовка
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return ResponseEntity.badRequest().body("Invalid or missing Authorization header");
+        }
+
+        String token = authorizationHeader.substring(7); // Убираем "Bearer "
+
+        userService.deactivateUser(userId, token);
+
+        return ResponseEntity.ok("User deactivated successfully");
+    }
+
+    @PutMapping("/{userId}/restore")
+    public ResponseEntity<String> restoreUser(@PathVariable Long userId) {
+        userService.restoreUser(userId);
+        return ResponseEntity.ok("User restored successfully");
+    }
 }

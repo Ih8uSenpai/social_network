@@ -1,5 +1,6 @@
 package com.example.social_network.services;
 
+import com.example.social_network.dto.TrackDto;
 import com.example.social_network.entity.Track;
 import com.example.social_network.repositories.TrackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.example.social_network.utils.Constants.uploadPath;
 
@@ -53,8 +56,9 @@ public class TrackService {
     }
 
 
-    public List<Track> getAllTracks() {
-        return trackRepository.findAll();
+    public List<TrackDto> getAllTracks() {
+        List<Track> tracks = trackRepository.findAll();
+        return tracks.stream().map(Track::toTrackDto).toList();
     }
 
     public List<Track> searchTracks(String searchString) {

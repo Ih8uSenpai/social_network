@@ -28,6 +28,10 @@ public class User{
     private Boolean isOnline;
     private LocalDateTime lastSeen;
 
+    @Column(nullable = false)
+    private Boolean isActive = true; // Статус активности пользователя
+
+    private LocalDateTime deactivationDate; // Дата деактивации
     public User(Long senderId) {
         this.userId = senderId;
     }

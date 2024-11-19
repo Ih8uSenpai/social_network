@@ -15,4 +15,5 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
     Optional<Profile> findByTag(String tag);
 
+    boolean existsByTag(String tag);
 }

@@ -21,6 +21,12 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (!user.getIsActive()) {
+            throw new IllegalStateException("User account is deactivated");
+        }
+
         return new CustomUser(user.getUsername(), user.getPasswordHash(), new ArrayList<>(), user.getUserId());
     }
+
 }

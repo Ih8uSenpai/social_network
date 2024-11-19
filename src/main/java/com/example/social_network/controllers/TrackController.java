@@ -1,6 +1,7 @@
 package com.example.social_network.controllers;
 
 import com.example.social_network.dto.CreateChatDto;
+import com.example.social_network.dto.TrackDto;
 import com.example.social_network.entity.Track;
 import com.example.social_network.entity.User;
 import com.example.social_network.services.TrackService;
@@ -43,8 +44,8 @@ public class TrackController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Track>> getAllTracks() {
-        List<Track> tracks = trackService.getAllTracks();
+    public ResponseEntity<List<TrackDto>> getAllTracks() {
+        List<TrackDto> tracks = trackService.getAllTracks();
         return new ResponseEntity<>(tracks, HttpStatus.OK);
     }
 

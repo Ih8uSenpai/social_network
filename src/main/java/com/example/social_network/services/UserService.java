@@ -5,9 +5,12 @@ import com.example.social_network.entity.Profile;
 import com.example.social_network.entity.User;
 import com.example.social_network.repositories.ProfileRepository;
 import com.example.social_network.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 
@@ -23,6 +26,9 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtBlacklistService jwtBlacklistService;
 
     public User registerUser(UserRegistrationDto registrationDto) {
         User newUser = new User();
@@ -52,5 +58,83 @@ public class UserService {
 
         return savedUser;
     }
+
+
+    @Transactional
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
+            throw new IllegalArgumentException("The password you entered was incorrect.");
+        }
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void changeUsername(Long userId, String newUsername) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("Username already taken");
+        }
+
+        user.setUsername(newUsername);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void changeEmail(Long userId, String newEmail) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (userRepository.existsByEmail(newEmail)) {
+            throw new IllegalArgumentException("Email already in use");
+        }
+
+        user.setEmail(newEmail);
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void deactivateUser(Long userId, String token) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!user.getIsActive()) {
+            throw new IllegalStateException("User is already deactivated");
+        }
+
+        user.setIsActive(false);
+        user.setDeactivationDate(LocalDateTime.now());
+
+        // Добавляем токен в чёрный список
+        jwtBlacklistService.addToBlacklist(token);
+
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void restoreUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (user.getIsActive()) {
+            throw new IllegalStateException("User is already active");
+        }
+
+        if (user.getDeactivationDate() != null && user.getDeactivationDate().plusDays(30).isBefore(LocalDateTime.now())) {
+            throw new IllegalStateException("The restoration period has expired");
+        }
+
+        user.setIsActive(true);
+        user.setDeactivationDate(null); // Очистить дату деактивации
+        userRepository.save(user);
+    }
+
+
 
 }

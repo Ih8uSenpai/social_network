@@ -6,6 +6,7 @@ import com.example.social_network.entity.Profile;
 import com.example.social_network.entity.User;
 import com.example.social_network.repositories.*;
 import jakarta.annotation.PostConstruct;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -239,5 +240,34 @@ public class ProfileService {
         return profileRepository.findByTag(tag);
     }
 
+    @Transactional
+    public void changeTag(Long profileId, String newTag) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
+        if (profileRepository.existsByTag(newTag)) {
+            throw new IllegalArgumentException("Tag already taken");
+        }
+
+        profile.setTag(newTag);
+        profileRepository.save(profile);
+    }
+
+    @Transactional
+    public void changeFirstName(Long profileId, String firstName) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        profile.setFirstName(firstName);
+        profileRepository.save(profile);
+    }
+
+    @Transactional
+    public void changeLastName(Long profileId, String lastName) {
+        Profile profile = profileRepository.findById(profileId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        profile.setLastName(lastName);
+        profileRepository.save(profile);
+    }
 }

@@ -2,6 +2,7 @@ package com.example.social_network.controllers;
 
 import com.example.social_network.dto.CommentDto;
 import com.example.social_network.dto.PostDto;
+import com.example.social_network.dto.TrackDto;
 import com.example.social_network.entity.*;
 import com.example.social_network.repositories.CommentRepository;
 import com.example.social_network.repositories.PostRepository;
@@ -24,7 +25,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.example.social_network.utils.CustomDateFormatter.formatter2;
-import static com.example.social_network.utils.Mappers.convertPostTrackToTrack;
 
 @RestController
 @RequestMapping("/api/posts")
@@ -114,8 +114,8 @@ public class PostController {
         List<PostDto> postDtos = new ArrayList<>();
         sortedPosts.forEach(post ->
         {
-            List<Track> tracks = new ArrayList<>();
-            post.getPostTracks().forEach(postTrack -> tracks.add(convertPostTrackToTrack(postTrack)));
+            List<TrackDto> tracks = new ArrayList<>();
+            post.getPostTracks().forEach(postTrack -> tracks.add(postTrack.getTrack().toTrackDto()));
             PostDto postDto = new PostDto(post.getId(), post.getProfile(), post.getContent(), post.getCreatedAt().format(formatter2), post.getLikesCount(), post.getSharesCount(), post.getCommentsCount(), post.getLikes(), post.getPostAttachments().stream()
                     .map(PostAttachment::getUrl)
                     .collect(Collectors.toList()), tracks, post.isLikedByUser(user.getUserId()),

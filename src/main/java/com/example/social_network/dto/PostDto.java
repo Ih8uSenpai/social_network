@@ -26,7 +26,7 @@ public class PostDto {
         private int commentsCount = 0;
         private List<Like> likes = new ArrayList<>();
         private List<String> postAttachments = new ArrayList<>();
-        private List<Track> postTracks;
+        private List<TrackDto> postTracks;
         private boolean isLiked = false;
         private boolean isPinned = false;
         private Set<String> tags = new HashSet<>();
