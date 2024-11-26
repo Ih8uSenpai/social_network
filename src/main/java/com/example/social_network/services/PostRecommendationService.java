@@ -51,9 +51,11 @@ public class PostRecommendationService {
                 .map(ViewedPost::getPostId)
                 .collect(Collectors.toSet());
 
+        Set<Long> addedPostIds = new HashSet<>();
+
         // Шаг 5: Находим посты, которые соответствуют интересам пользователя и не были просмотрены
         List<Post> recommendedPosts = postRepository.findByTagsIn(topInterests, userId).stream()
-                .filter(post -> !viewedPostIds.contains(post.getId()))  // Исключаем уже просмотренные посты
+                .filter(post -> !viewedPostIds.contains(post.getId()) && addedPostIds.add(post.getId()))  // Исключаем уже просмотренные и дублирующиеся посты
                 .sorted(Comparator.comparingInt(post -> getPostMatchScore(post, topInterests)))
                 .limit(NEWS_FEED_SIZE)
                 .collect(Collectors.toList());
@@ -62,7 +64,7 @@ public class PostRecommendationService {
         if (recommendedPosts.size() < NEWS_FEED_SIZE) {
             Set<String> topInterests2 = getTopTagsByCombinedInterest(userId, 10);
             List<Post> recommendedPosts2 = postRepository.findByTagsIn(topInterests2, userId).stream()
-                    .filter(post -> !viewedPostIds.contains(post.getId()))  // Исключаем уже просмотренные посты
+                    .filter(post -> !viewedPostIds.contains(post.getId()) && addedPostIds.add(post.getId()))  // Исключаем уже просмотренные и дублирующиеся посты
                     .sorted(Comparator.comparingInt(post -> getPostMatchScore(post, topInterests2)))
                     .limit(NEWS_FEED_SIZE - recommendedPosts.size()).toList();
             recommendedPosts.addAll(recommendedPosts2);
@@ -70,7 +72,10 @@ public class PostRecommendationService {
 
         // Шаг 7: Если все еще недостаточно постов, добавляем новые или популярные
         if (recommendedPosts.size() < NEWS_FEED_SIZE) {
-            recommendedPosts.addAll(getNewOrPopularPosts(userId, viewedPostIds, NEWS_FEED_SIZE - recommendedPosts.size()));
+            return recommendedPosts.stream()
+                    .distinct()
+                    .limit(NEWS_FEED_SIZE)
+                    .collect(Collectors.toList());
         }
 
         return recommendedPosts;
