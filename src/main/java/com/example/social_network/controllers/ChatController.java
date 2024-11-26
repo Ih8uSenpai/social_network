@@ -29,7 +29,7 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/chats")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "${FRONTEND_URL}")
 @Slf4j
 public class ChatController {
 

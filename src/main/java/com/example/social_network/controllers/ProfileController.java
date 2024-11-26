@@ -31,7 +31,7 @@ import static com.example.social_network.utils.Constants.uploadPath;
 
 @RestController
 @RequestMapping("/api/profiles")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "${FRONTEND_URL}")
 @RequiredArgsConstructor
 @Slf4j
 public class ProfileController {

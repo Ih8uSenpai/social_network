@@ -29,7 +29,7 @@ import static com.example.social_network.utils.CustomDateFormatter.formatter2;
 @RestController
 @RequestMapping("/api/posts")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "${FRONTEND_URL}")
 public class PostController {
 
     private final PostService postService;
