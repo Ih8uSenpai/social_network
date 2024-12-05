@@ -203,7 +203,7 @@ public class ProfileController {
                     byte[] bytes = multipartFile.getBytes();
                     Path path = Paths.get(uploadPath + multipartFile.getOriginalFilename());
                     Files.write(path, bytes);
-                    String correctPath = path.toString().replace("\\", "/");
+                    String correctPath = multipartFile.getOriginalFilename();
                     postAttachment.setUrl(correctPath);
                 } catch (IOException e) {
                     throw new RuntimeException(e);

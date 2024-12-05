@@ -33,7 +33,7 @@ public class PostAttachmentService {
                 Files.write(path, bytes);
 
                 // Предполагается, что path.toString() дает нам путь к файлу
-                String correctPath = path.toString().replace("\\", "/");
+                String correctPath = "uploads/" + file.getOriginalFilename();
                 postAttachment.setUrl(correctPath);
             }
             return postAttachmentRepository.save(postAttachment);

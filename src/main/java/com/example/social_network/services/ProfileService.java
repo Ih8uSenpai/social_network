@@ -23,6 +23,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.example.social_network.utils.Constants.uploadPath;
+
 @Service
 @Slf4j
 public class ProfileService {
@@ -95,25 +97,33 @@ public class ProfileService {
 
     public String uploadProfileImage(MultipartFile file, Long userId, String element) throws IOException {
         log.debug("Загрузка файла: {}, для пользователя с ID: {}", file.getOriginalFilename(), userId);
+
+        // Проверка, что файл не пустой
         if (file.isEmpty()) {
             throw new IOException("Файл пуст");
         }
 
+        // Генерация имени файла с текущим временем
         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path destinationFile = this.rootLocation.resolve(Paths.get(filename))
-                .normalize().toAbsolutePath();
+        // Путь к папке, доступной для Nginx
+        Path path = Paths.get(uploadPath + filename);
 
-        if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-            throw new IllegalStateException("Нельзя сохранять файлы за пределами текущей директории");
+        try {
+            byte[] bytes = file.getBytes();
+            Files.write(path, bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
 
+        // Запись файла в директорию
         try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, destinationFile, StandardCopyOption.REPLACE_EXISTING);
+            Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING);
         }
 
+        // URL файла для доступа через Nginx
+        String imageUrl = filename;
 
-        String imageUrl = "http://localhost:8080/uploads/" + filename;
-
+        // Обновление профиля пользователя
         Optional<Profile> profile = profileRepository.findByUser_UserId(userId);
         switch (element) {
             case "banner" -> profile.ifPresent(value -> {
@@ -130,6 +140,7 @@ public class ProfileService {
 
         return imageUrl;
     }
+
 
     public List<Profile> searchProfilesByTag(String tag) {
         return profileRepository.findByTagContainingIgnoreCase(tag);
