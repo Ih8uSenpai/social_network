@@ -1,8 +1,0 @@
-services:
-  - type: web
-    name: social_network
-    env: docker
-    region: oregon
-    dockerfilePath: docker-compose.yml
-    branch: main
-    autoDeploy: true
