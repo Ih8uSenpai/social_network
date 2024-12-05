@@ -4,7 +4,7 @@ FROM nginx:latest
 COPY nginx.conf /etc/nginx/nginx.conf
 
 # Копируем статические файлы
-COPY ./uploads /usr/share/nginx/uploads
+COPY ../uploads /usr/share/nginx/uploads
 
 # Открываем порт
 EXPOSE 80
