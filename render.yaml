@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: backend-service
+    env: docker
+    buildCommand: "" # Render автоматически построит контейнер
+    startCommand: "java -jar /path/to/your/backend.jar" # Укажите путь к вашему jar-файлу
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://postgres:5432/my_database
+      - key: SPRING_DATASOURCE_USERNAME
+        value: my_user
+      - key: SPRING_DATASOURCE_PASSWORD
+        value: my_password
+      - key: FRONTEND_URL
+        value: "http://localhost:3000/"
+    volumes:
+      - name: uploads
+        mountPath: /usr/share/nginx/uploads
+    services:
+      - type: database
+        name: postgres
+        plan: standard
+        databaseName: my_database
+        user: my_user
+        password: my_password
+    routes:
+      - type: HTTP
+        source: /
+        targetPort: 8080
+
+  - type: web
+    name: nginx-service
+    env: docker
+    buildCommand: "" # Render автоматически построит контейнер
+    startCommand: "" # Render запустит ваш контейнер по дефолтной команде из Dockerfile
+    dockerfilePath: ./nginx/Dockerfile
+    routes:
+      - type: HTTP
+        source: /
+        targetPort: 80
+    volumes:
+      - name: uploads
+        mountPath: /usr/share/nginx/uploads
