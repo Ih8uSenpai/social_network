@@ -1,6 +1,6 @@
 FROM maven:3.8-openjdk-18 AS builder
 WORKDIR /app
-COPY . .
+COPY ../.. .
 RUN mvn clean package
 
 FROM openjdk:18
