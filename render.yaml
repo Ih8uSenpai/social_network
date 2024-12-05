@@ -2,8 +2,8 @@ services:
   - type: web
     name: backend-service
     env: docker
-    buildCommand: "" # Render автоматически построит контейнер
-    startCommand: "java -jar /path/to/your/backend.jar" # Укажите путь к вашему jar-файлу
+    buildCommand: ""
+    startCommand: "java -jar /path/to/backend.jar" # Укажите команду запуска вашего backend
     dockerfilePath: ./Dockerfile
     envVars:
       - key: SPRING_DATASOURCE_URL
@@ -13,27 +13,20 @@ services:
       - key: SPRING_DATASOURCE_PASSWORD
         value: my_password
       - key: FRONTEND_URL
-        value: "http://localhost:3000/"
-    volumes:
-      - name: uploads
-        mountPath: /usr/share/nginx/uploads
-    services:
-      - type: database
-        name: postgres
-        plan: standard
-        databaseName: my_database
-        user: my_user
-        password: my_password
+        value: "http://nginx-service.onrender.com/" # URL Nginx-сервиса
     routes:
       - type: HTTP
         source: /
-        targetPort: 8080
+        targetPort: 8080 # Backend порт
+    volumes:
+      - name: uploads
+        mountPath: /usr/share/nginx/uploads
 
   - type: web
     name: nginx-service
     env: docker
-    buildCommand: "" # Render автоматически построит контейнер
-    startCommand: "" # Render запустит ваш контейнер по дефолтной команде из Dockerfile
+    buildCommand: ""
+    startCommand: "" # Если команда запуска не указана, Render выполнит запуск по умолчанию
     dockerfilePath: ./nginx/Dockerfile
     routes:
       - type: HTTP
@@ -42,3 +35,12 @@ services:
     volumes:
       - name: uploads
         mountPath: /usr/share/nginx/uploads
+
+  - type: database
+    name: postgres
+    plan: standard
+    databaseName: my_database
+    user: my_user
+    password: my_password
+volumes:
+  - name: uploads
