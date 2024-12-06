@@ -7,41 +7,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-
-import static com.example.social_network.utils.Constants.uploadPath;
 
 @Service
 public class PostAttachmentService {
 
     private final PostAttachmentRepository postAttachmentRepository;
+    private final StaticFileService staticFileService;
 
     @Autowired
-    public PostAttachmentService(PostAttachmentRepository postAttachmentRepository) {
+    public PostAttachmentService(PostAttachmentRepository postAttachmentRepository, StaticFileService staticFileService) {
         this.postAttachmentRepository = postAttachmentRepository;
+        this.staticFileService = staticFileService;
     }
 
 
     public PostAttachment saveAttachment(PostAttachment postAttachment, MultipartFile file) {
-        try {
-            if (!file.isEmpty()) {
-                byte[] bytes = file.getBytes();
-                Path path = Paths.get(uploadPath + file.getOriginalFilename());
-                Files.write(path, bytes);
-
-                // Предполагается, что path.toString() дает нам путь к файлу
-                String correctPath = "uploads/" + file.getOriginalFilename();
-                postAttachment.setUrl(correctPath);
-            }
-            return postAttachmentRepository.save(postAttachment);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+        if (!file.isEmpty()) {
+            staticFileService.uploadFile(file);
+            String correctPath = "uploads/" + file.getOriginalFilename();
+            postAttachment.setUrl(correctPath);
         }
+        return postAttachmentRepository.save(postAttachment);
+
     }
+
     public List<PostAttachment> getAttachmentsByPostId(Long postId) {
         return postAttachmentRepository.findByPostId(postId);
     }

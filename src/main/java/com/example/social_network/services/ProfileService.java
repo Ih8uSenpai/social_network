@@ -7,12 +7,11 @@ import com.example.social_network.entity.User;
 import com.example.social_network.repositories.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -23,8 +22,6 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.example.social_network.utils.Constants.uploadPath;
-
 @Service
 @Slf4j
 public class ProfileService {
@@ -34,15 +31,17 @@ public class ProfileService {
     private PostRepository postRepository;
     private FollowerRepository followerRepository;
     private PostAttachmentRepository postAttachmentRepository;
+    private StaticFileService staticFileService;
 
     @Autowired
     public ProfileService(ProfileRepository profileRepository, UserRepository userRepository, PostRepository postRepository,
-                          FollowerRepository followerRepository, PostAttachmentRepository postAttachmentRepository) {
+                          FollowerRepository followerRepository, PostAttachmentRepository postAttachmentRepository, StaticFileService staticFileService) {
         this.profileRepository = profileRepository;
         this.userRepository = userRepository;
         this.postRepository = postRepository;
         this.followerRepository = followerRepository;
         this.postAttachmentRepository = postAttachmentRepository;
+        this.staticFileService = staticFileService;
     }
 
     public List<Post> getPostsByProfileId(Long profileId) {
@@ -96,7 +95,6 @@ public class ProfileService {
 
 
     public String uploadProfileImage(MultipartFile file, Long userId, String element) throws IOException {
-        log.debug("Загрузка файла: {}, для пользователя с ID: {}", file.getOriginalFilename(), userId);
 
         // Проверка, что файл не пустой
         if (file.isEmpty()) {
@@ -105,20 +103,16 @@ public class ProfileService {
 
         // Генерация имени файла с текущим временем
         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        // Путь к папке, доступной для Nginx
-        Path path = Paths.get(uploadPath + filename);
+        MultipartFile renamedFile = new MockMultipartFile(
+                filename,
+                filename,
+                file.getContentType(),
+                file.getInputStream()
+        );
 
-        try {
-            byte[] bytes = file.getBytes();
-            Files.write(path, bytes);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // Загрузка файла через сервис
+        staticFileService.uploadFile(renamedFile);
 
-        // Запись файла в директорию
-        try (InputStream inputStream = file.getInputStream()) {
-            Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING);
-        }
 
         // URL файла для доступа через Nginx
         String imageUrl = filename;
@@ -164,13 +158,13 @@ public class ProfileService {
             if (followingUser.isPresent()) {
                 Optional<Profile> followingProfile = Optional.of(new Profile());
                 followingProfile = profileRepository.findByUser_UserId(followingUser.get().getUserId());
-                if (followingProfile.isPresent()){
+                if (followingProfile.isPresent()) {
                     followingProfile.get().setFollowingCount(followingProfile.get().getFollowingCount() + 1);
                     profileRepository.save(followingProfile.get());
                 }
             }
             Optional<Profile> profileToBeFollowed = profileRepository.findByUser_UserId(userIdToFollow);
-            if (profileToBeFollowed.isPresent()){
+            if (profileToBeFollowed.isPresent()) {
                 profileToBeFollowed.get().setFollowersCount(profileToBeFollowed.get().getFollowersCount() + 1);
                 profileRepository.save(profileToBeFollowed.get());
             }
@@ -196,13 +190,13 @@ public class ProfileService {
             if (followingUser.isPresent()) {
                 Optional<Profile> followingProfile = Optional.of(new Profile());
                 followingProfile = profileRepository.findByUser_UserId(followingUser.get().getUserId());
-                if (followingProfile.isPresent()){
+                if (followingProfile.isPresent()) {
                     followingProfile.get().setFollowingCount(followingProfile.get().getFollowingCount() - 1);
                     profileRepository.save(followingProfile.get());
                 }
             }
             Optional<Profile> profileToBeFollowed = profileRepository.findByUser_UserId(userIdToUnfollow);
-            if (profileToBeFollowed.isPresent()){
+            if (profileToBeFollowed.isPresent()) {
                 profileToBeFollowed.get().setFollowersCount(profileToBeFollowed.get().getFollowersCount() - 1);
                 profileRepository.save(profileToBeFollowed.get());
             }
@@ -223,6 +217,7 @@ public class ProfileService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
+
     public List<Profile> getFollowing(Long userId) {
         List<Follower> followings = followerRepository.findByFollower_UserId(userId);
         return followings.stream()
@@ -231,23 +226,23 @@ public class ProfileService {
                 .collect(Collectors.toList());
     }
 
-    public void changePinnedPost(Long userId, Long newPostId){
+    public void changePinnedPost(Long userId, Long newPostId) {
         Profile profile = profileRepository.findByUser_UserId(userId).orElse(null);
-        if (profile != null){
+        if (profile != null) {
             profile.setPinnedPostId(newPostId);
             profileRepository.save(profile);
         }
     }
 
-    public void unpinPost(Long userId){
+    public void unpinPost(Long userId) {
         Profile profile = profileRepository.findByUser_UserId(userId).orElse(null);
-        if (profile != null){
+        if (profile != null) {
             profile.setPinnedPostId(null);
             profileRepository.save(profile);
         }
     }
 
-    public Optional<Profile> findProfileByTag(String tag){
+    public Optional<Profile> findProfileByTag(String tag) {
         return profileRepository.findByTag(tag);
     }
 

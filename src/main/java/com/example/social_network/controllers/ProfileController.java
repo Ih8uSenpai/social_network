@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static com.example.social_network.controllers.PostController.convertPostsToDTO;
-import static com.example.social_network.utils.Constants.uploadPath;
 
 @RestController
 @RequestMapping("/api/profiles")
@@ -48,6 +47,7 @@ public class ProfileController {
     private final UserInterestsService userInterestsService;
 
     private final UserToUserInterestService userToUserInterestService;
+    private final StaticFileService staticFileService;
 
     @GetMapping("/other/{userId}")
     public ResponseEntity<Profile> getUserProfile(@PathVariable Long userId) {
@@ -144,7 +144,7 @@ public class ProfileController {
     }
 
     @DeleteMapping("/photo/{index}")
-    public ResponseEntity<?> deletePhoto(@PathVariable int index){
+    public ResponseEntity<?> deletePhoto(@PathVariable int index) {
         String username = SecurityUtils.getCurrentUsername();
         User currentUser = userRepository.findByUsername(username).get();
         List<User2Photos> user2Photos = user2PhotosRepository.findAllByUser(currentUser);
@@ -199,15 +199,10 @@ public class ProfileController {
                 postAttachment.setType(multipartFile.getContentType());
                 postAttachment.setPost(post);
 
-                try {
-                    byte[] bytes = multipartFile.getBytes();
-                    Path path = Paths.get(uploadPath + multipartFile.getOriginalFilename());
-                    Files.write(path, bytes);
-                    String correctPath = multipartFile.getOriginalFilename();
-                    postAttachment.setUrl(correctPath);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+                staticFileService.uploadFile(multipartFile);
+                String correctPath = multipartFile.getOriginalFilename();
+                postAttachment.setUrl(correctPath);
+
                 postAttachments.add(postAttachment);
                 User2Photos user2Photos = new User2Photos();
                 user2Photos.setUser(user);
@@ -220,10 +215,9 @@ public class ProfileController {
 
 
         // прикрепляем трэки (если есть)
-        if (selectedTracks != null)
-        {
+        if (selectedTracks != null) {
             List<PostTrack> postTracks = new ArrayList<>();
-            for (Track track : selectedTracks){
+            for (Track track : selectedTracks) {
                 postTracks.add(new PostTrack(null, track, post));
             }
             post.setPostTracks(postTracks);
@@ -390,14 +384,14 @@ public class ProfileController {
 
     @PutMapping("/{profileId}/update-firstname")
     public ResponseEntity<String> changeFirstName(@PathVariable Long profileId,
-                                            @RequestParam String firstName) {
+                                                  @RequestParam String firstName) {
         profileService.changeFirstName(profileId, firstName);
         return ResponseEntity.ok("First name updated successfully");
     }
 
     @PutMapping("/{profileId}/update-lastname")
     public ResponseEntity<String> changeLastName(@PathVariable Long profileId,
-                                            @RequestParam String lastName) {
+                                                 @RequestParam String lastName) {
         profileService.changeLastName(profileId, lastName);
         return ResponseEntity.ok("Last name updated successfully");
     }

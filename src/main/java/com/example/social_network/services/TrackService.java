@@ -6,53 +6,34 @@ import com.example.social_network.repositories.TrackRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
-import static com.example.social_network.utils.Constants.uploadPath;
 
 @Service
 public class TrackService {
 
     private final TrackRepository trackRepository;
-
+    private final StaticFileService staticFileService;
 
     @Autowired
-    public TrackService(TrackRepository trackRepository) {
+    public TrackService(TrackRepository trackRepository, StaticFileService staticFileService) {
         this.trackRepository = trackRepository;
+        this.staticFileService = staticFileService;
     }
 
     public Track saveTrack(Track track, MultipartFile file, MultipartFile icon) {
-        try {
-            if (!file.isEmpty()) {
-                byte[] bytes = file.getBytes();
-                Path path = Paths.get(uploadPath + file.getOriginalFilename());
-                Files.write(path, bytes);
+        if (!file.isEmpty()) {
 
-
-                String correctPath = path.toString().replace("\\", "/");
-                track.setUrl(correctPath);
-            }
-            if (icon != null && !icon.isEmpty()) {
-                byte[] bytes = icon.getBytes();
-                Path path = Paths.get(uploadPath + icon.getOriginalFilename());
-                Files.write(path, bytes);
-
-
-                String correctPath = path.toString().replace("\\", "/");
-                track.setIcon_url(correctPath);
-            }
-            return trackRepository.save(track);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+            staticFileService.uploadFile(file);
+            track.setUrl("uploads/" + file.getOriginalFilename());
         }
+        if (icon != null && !icon.isEmpty()) {
+            staticFileService.uploadFile(icon);
+            track.setIcon_url("uploads/" + icon.getOriginalFilename());
+        }
+        return trackRepository.save(track);
     }
 
 
