@@ -25,7 +25,7 @@ public class PostRecommendationService {
     private final UserToUserInterestRepository userToUserInterestRepository;
     private final ViewedPostRepository viewedPostRepository;
 
-    private static final int NEWS_FEED_SIZE = 20; // Размер ленты новостей
+    private static final int NEWS_FEED_SIZE = 20;
 
 
     public List<Post> recommendPosts(Long userId) {

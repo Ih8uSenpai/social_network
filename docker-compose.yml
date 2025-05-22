@@ -9,6 +9,7 @@ services:
       SPRING_DATASOURCE_USERNAME: my_user
       SPRING_DATASOURCE_PASSWORD: my_password
       FRONTEND_URL: "http://localhost:3000/"
+      NGINX_UPLOAD_URL: "https://sc-nginx.onrender.com/uploads/"
     volumes:
       - ./uploads:/usr/share/nginx/uploads
     networks:

@@ -19,11 +19,11 @@ public class Follower {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "followingId")
-    private User user; // Ссылка на пользователя, который имеет этого фолловера
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "followerId")
-    private User follower; // ID фолловера
+    private User follower;
 
     public Follower() {
     }

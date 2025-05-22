@@ -9,9 +9,14 @@ import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -95,12 +100,6 @@ public class ProfileService {
 
 
     public String uploadProfileImage(MultipartFile file, Long userId, String element) throws IOException {
-
-        // Проверка, что файл не пустой
-        if (file.isEmpty()) {
-            throw new IOException("Файл пуст");
-        }
-
         // Генерация имени файла с текущим временем
         String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
         MultipartFile renamedFile = new MockMultipartFile(
@@ -109,6 +108,16 @@ public class ProfileService {
                 file.getContentType(),
                 file.getInputStream()
         );
+        // === 1. Сохранение на локальный диск ===
+        String LOCAL_DIRECTORY = "C:\\Users\\herme\\IdeaProjects\\social_network\\nginx\\uploads\\";
+        File localFile = new File(LOCAL_DIRECTORY + renamedFile.getOriginalFilename());
+
+        // Сохранение файла
+        try (FileOutputStream fos = new FileOutputStream(localFile)) {
+            fos.write(renamedFile.getBytes());
+        }
+
+
 
         // Загрузка файла через сервис
         staticFileService.uploadFile(renamedFile);
@@ -181,7 +190,7 @@ public class ProfileService {
     public boolean unfollowUser(String currentUsername, Long userIdToUnfollow) {
         Optional<User> currentUser = userRepository.findByUsername(currentUsername);
         if (currentUser.isEmpty() || currentUser.get().getUserId().equals(userIdToUnfollow)) {
-            return false; // Проверка на null и попытку отписаться от самого себя
+            return false;
         }
 
         Follower existingFollower = followerRepository.findByUser_UserIdAndFollower_UserId(userIdToUnfollow, currentUser.get().getUserId());

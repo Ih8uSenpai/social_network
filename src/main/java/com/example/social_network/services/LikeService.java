@@ -20,14 +20,10 @@ import java.time.format.DateTimeFormatter;
 @Service
 @RequiredArgsConstructor
 public class LikeService {
-
     private final LikeRepository likeRepository;
     private final PostRepository postRepository;
     private final UserInterestsService userInterestsService;
     private final UserToUserInterestService userToUserInterestService;
-
-
-
 
     @Transactional
     public Like addLikeToPost(Long postId, Long userId) {

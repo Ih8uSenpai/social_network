@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +25,7 @@ public class StaticFileService {
 
     public String uploadFile(MultipartFile file) {
         try {
+
             RestTemplate restTemplate = new RestTemplate();
 
             // Устанавливаем Content-Type файла
@@ -39,6 +42,14 @@ public class StaticFileService {
             // Отправляем запрос PUT
             restTemplate.put(fileUrl, requestEntity);
 
+            // === 1. Сохранение на локальный диск ===
+            String LOCAL_DIRECTORY = "C:\\Users\\herme\\IdeaProjects\\social_network\\nginx\\uploads\\";
+            File localFile = new File(LOCAL_DIRECTORY + file.getOriginalFilename());
+
+            // Сохранение файла
+            try (FileOutputStream fos = new FileOutputStream(localFile)) {
+                fos.write(file.getBytes());
+            }
             return fileUrl;
         } catch (IOException e) {
             return null;

@@ -29,9 +29,9 @@ public class User{
     private LocalDateTime lastSeen;
 
     @Column(nullable = false)
-    private Boolean isActive = true; // Статус активности пользователя
+    private Boolean isActive = true;
 
-    private LocalDateTime deactivationDate; // Дата деактивации
+    private LocalDateTime deactivationDate;
     public User(Long senderId) {
         this.userId = senderId;
     }
