@@ -1,13 +1,3 @@
-# Этап 1: Скачивание герба
-FROM ubuntu:20.04 AS download_herb
-
-# Устанавливаем wget
-RUN apt-get update && apt-get install -y wget && apt-get clean
-
-# Скачиваем изображение герба
-RUN wget https://www.mirea.ru/upload/medialibrary/80f/MIREA_Gerb_Colour.png -P /app/uploads
-
-# Этап 2: Сборка проекта
 FROM maven:3.8-openjdk-18 AS builder
 
 # Указываем рабочую директорию для сборки
@@ -16,8 +6,6 @@ WORKDIR /app
 # Копируем исходный код проекта
 COPY ../.. .
 
-# Копируем герб из предыдущего этапа
-COPY --from=download_herb /app/src/main/resources/static/MIREA_Gerb_Colour.png /app/uploads
 
 # Собираем проект
 RUN mvn clean package -DskipTests
