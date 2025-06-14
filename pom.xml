@@ -29,7 +29,13 @@
         <dependency>
             <groupId>chat.giga</groupId>
             <artifactId>gigachat-java</artifactId>
-            <version>0.1.5</version>
+            <version>0.1.10</version>
+        </dependency>
+
+        <dependency>
+            <groupId>chat.giga</groupId>
+            <artifactId>langchain4j-gigachat</artifactId>
+            <version>0.1.6</version>
         </dependency>
         <dependency>
             <groupId>dev.langchain4j</groupId>

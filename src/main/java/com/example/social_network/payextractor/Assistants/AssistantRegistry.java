@@ -1,7 +1,7 @@
 package com.example.social_network.payextractor.Assistants;
 
 
-import com.example.social_network.payextractor.langchain4j.GigaChatChatModel;
+import chat.giga.langchain4j.GigaChatChatModel;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;

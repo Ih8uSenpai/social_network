@@ -3,11 +3,10 @@ package com.example.social_network.payextractor.configs;
 import chat.giga.client.GigaChatClient;
 import chat.giga.client.auth.AuthClient;
 import chat.giga.client.auth.AuthClientBuilder;
+import chat.giga.langchain4j.GigaChatChatModel;
+import chat.giga.langchain4j.GigaChatChatRequestParameters;
 import chat.giga.model.ModelName;
 import chat.giga.model.Scope;
-
-import com.example.social_network.payextractor.langchain4j.GigaChatChatModel;
-import com.example.social_network.payextractor.langchain4j.GigaChatChatRequestParameters;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

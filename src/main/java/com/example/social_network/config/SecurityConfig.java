@@ -56,7 +56,6 @@ public class SecurityConfig {
                         .requestMatchers(new AntPathRequestMatcher("/uploads/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/ws/**")).permitAll()
                         .requestMatchers(new AntPathRequestMatcher("/src/main/resources/static/**")).permitAll()
-                        .requestMatchers("/{sessionId}/chat").permitAll()
                         .anyRequest().authenticated() // Все остальные запросы требуют аутентификации
                 )
                 .httpBasic().and()
