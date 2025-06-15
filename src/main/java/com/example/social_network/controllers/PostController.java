@@ -55,7 +55,10 @@ public class PostController {
 
     @GetMapping("/recommendations")
     public ResponseEntity<List<PostDto>> getRecommendations(){
-        User user = userRepository.findByUsername(SecurityUtils.getCurrentUsername()).get();
+        String username = SecurityUtils.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+
 
         List<Post> posts = postRecommendationService.recommendPosts(user.getUserId());
 

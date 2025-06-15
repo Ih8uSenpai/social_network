@@ -19,7 +19,6 @@ import java.util.Set;
 @Setter
 @Entity
 @Table(name = "posts")
-@ToString
 public class Post {
 
     @Id

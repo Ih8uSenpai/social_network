@@ -35,7 +35,6 @@ public class PostRecommendationService {
         // Шаг 2: Если нет интересов, возвращаем популярные посты
         if (userInterests.isEmpty()) {
             System.out.println("\n\n\n\n\n\n\n\nUSER INTEREST EMPTY");
-            System.out.println("\nPOSTS:" + getPopularPosts(userId).toString());
             return getPopularPosts(userId);
         }
 
