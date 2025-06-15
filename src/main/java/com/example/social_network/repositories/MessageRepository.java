@@ -20,10 +20,19 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     Optional<Message> findFirstByChatIdOrderBySentAtDesc(Long chatId);
 
 
-    @Query("SELECT m FROM Message m WHERE m.chat.id = :chatId AND not m.sender.userId = :userId AND m.messageId not in (select vm.messageId from ViewedMessage vm where vm.messageId = m.messageId and vm.userId = :userId)")
+    @Query("SELECT m FROM Message m WHERE m.chat.id = :chatId AND not m.sender.user.userId = :userId AND m.messageId not in (select vm.messageId from ViewedMessage vm where vm.messageId = m.messageId and vm.userId = :userId)")
     List<Message> findUnviewedMessagesByChatIdAndUserId(@Param("chatId") Long chatId, @Param("userId") Long userId);
 
     @Query("SELECT DISTINCT m.chat FROM Message m WHERE LOWER(m.content) LIKE LOWER(CONCAT('%', :substring, '%'))")
     List<Chat> findChatsByMessageContentContaining(@Param("substring") String substring);
+
+    @Query("""
+        SELECT m FROM Message m
+        WHERE NOT EXISTS (
+            SELECT 1 FROM ViewedMessage vm
+            WHERE vm.messageId = m.messageId AND vm.userId = :userId
+        )
+    """)
+    List<Message> findAllUnreadMessagesForUser(@Param("userId") Long userId);
 }
 

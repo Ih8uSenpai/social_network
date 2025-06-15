@@ -35,7 +35,8 @@ public class ChatService {
     public Message createMessage(CreateMessageDto createMessageDto, Long senderId, Long chatId) {
         Message message = new Message();
 
-        message.setSender(new User(senderId));
+        Profile sender = profileRepository.findByUser_UserId(senderId).get();
+        message.setSender(sender);
         message.setContent(createMessageDto.getContent());
         Optional<Chat> currentChat = chatRepository.findById(chatId);
         message.setChat(currentChat.get());
@@ -93,7 +94,7 @@ public class ChatService {
 
             messageRepository.findFirstByChatIdOrderBySentAtDesc(el.getId()).ifPresent(value -> {
                 chatDto.setLastMessage(value.getContent());
-                chatDto.setLastMessageSenderIconUrl(profileRepository.findByUser_UserId(value.getSender().getUserId()).get().getProfilePictureUrl());
+                chatDto.setLastMessageSenderIconUrl(profileRepository.findByUser_UserId(value.getSender().getUser().getUserId()).get().getProfilePictureUrl());
             });
 
             chatDto.setUnviewedMessages(messageRepository.findUnviewedMessagesByChatIdAndUserId(el.getId(), userId).size());
@@ -136,7 +137,7 @@ public class ChatService {
             MessageDto currentMessage = messageDtosSorted.get(i);
             MessageDto previousMessage = messageDtosSorted.get(i - 1);
 
-            if (currentMessage.getSender().getUserId().equals(previousMessage.getSender().getUserId())) {
+            if (currentMessage.getSender().getUser().getUserId().equals(previousMessage.getSender().getUser().getUserId())) {
                 currentMessage.setSingle(false);
             }
         }
@@ -190,7 +191,7 @@ public class ChatService {
             messageRepository.findFirstByChatIdOrderBySentAtDesc(el.getId()).ifPresent(value -> {
                 chatDto.setLastMessage(value.getContent());
                 chatDto.setLastMessageSenderIconUrl(
-                        profileRepository.findByUser_UserId(value.getSender().getUserId())
+                        profileRepository.findByUser_UserId(value.getSender().getUser().getUserId())
                                 .get()
                                 .getProfilePictureUrl()
                 );

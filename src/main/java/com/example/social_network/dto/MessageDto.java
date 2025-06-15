@@ -1,6 +1,7 @@
 package com.example.social_network.dto;
 
 import com.example.social_network.entity.Chat;
+import com.example.social_network.entity.Profile;
 import com.example.social_network.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 public class MessageDto {
 
     private Long messageId;
-    private User sender;
+    private Profile sender;
     private Chat chat;
     private String content;
     private LocalDateTime sentAt;
